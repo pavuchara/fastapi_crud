@@ -7,7 +7,7 @@ from fastapi import (
     status,
 )
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from slugify import slugify
 
@@ -25,18 +25,18 @@ router = APIRouter(prefix="/products", tags=["products"])
 
 @router.get("/", response_model=list[ProductRetriveSchema], status_code=status.HTTP_200_OK)
 async def get_list_products(
-    db: Annotated[Session, Depends(get_db)]
+    db: Annotated[AsyncSession, Depends(get_db)]
 ):
-    products = db.scalars(select(Product))
-    return products
+    products = await db.scalars(select(Product))
+    return products.all()
 
 
 @router.post("/", response_model=ProductRetriveSchema, status_code=status.HTTP_201_CREATED)
 async def create_product(
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     product_data: ProductCreateSchema,
 ):
-    category = get_object_or_404(db, Category, Category.id == product_data.category_id)
+    category = await get_object_or_404(db, Category, Category.id == product_data.category_id)
     product = Product(
         name=product_data.name,
         slug=slugify(product_data.name),
@@ -47,17 +47,17 @@ async def create_product(
         category_id=category.id,
     )
     db.add(product)
-    db.commit()
-    db.refresh(product)
+    await db.commit()
+    await db.refresh(product)
     return product
 
 
 @router.get("/{product_id}", response_model=ProductRetriveSchema, status_code=status.HTTP_200_OK)
 async def get_product(
     product_id: int,
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    product = get_object_or_404(db, Product, Product.id == product_id)
+    product = await get_object_or_404(db, Product, Product.id == product_id)
     return product
 
 
@@ -65,10 +65,10 @@ async def get_product(
 async def update_product(
     product_id: int,
     product_data: ProductCreateSchema,
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    product = get_object_or_404(db, Product, Product.id == product_id)
-    category = get_object_or_404(db, Category, Category.id == product_data.category_id)
+    product = await get_object_or_404(db, Product, Product.id == product_id)
+    category = await get_object_or_404(db, Category, Category.id == product_data.category_id)
 
     product.name = product_data.name
     product.slug = slugify(product_data.name)
@@ -76,19 +76,19 @@ async def update_product(
     product.price = product_data.price
     product.image_url = product_data.name
     product.category_id = category.id
-    db.commit()
-    db.refresh(product)
+    await db.commit()
+    await db.refresh(product)
     return product
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_product(
     product_id: int,
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    product = get_object_or_404(db, Product, Product.id == product_id)
-    db.delete(product)
-    db.commit()
+    product = await get_object_or_404(db, Product, Product.id == product_id)
+    await db.delete(product)
+    await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -99,7 +99,8 @@ async def delete_product(
 )
 async def get_products_list_by_category(
     category_id: int,
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    category = get_object_or_404(db, Category, Category.id == category_id)
-    return get_object_or_404(db, Product, Product.category_id == category.id)
+    category = await get_object_or_404(db, Category, Category.id == category_id)
+    products = await get_object_or_404(db, Product, Product.category_id == category.id)
+    return products.all()
