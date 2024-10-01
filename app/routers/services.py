@@ -1,11 +1,11 @@
 from fastapi import HTTPException, status
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
-def get_object_or_404(db_session: Session, model, expression):
-    instance = db_session.scalar(
+async def get_object_or_404(db_session: AsyncSession, model, expression):
+    instance = await db_session.scalar(
         select(model)
         .where(expression)
     )
