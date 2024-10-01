@@ -4,7 +4,6 @@ from fastapi import (
     APIRouter,
     Depends,
     Response,
-    HTTPException,
     status,
 )
 from sqlalchemy import select
@@ -13,6 +12,7 @@ from sqlalchemy.orm import Session
 from slugify import slugify
 
 from app.backend.db_depends import get_db
+from app.routers.services import get_object_or_404
 from app.models.products import Product
 from app.models.category import Category
 from app.schemas.product import (
@@ -36,15 +36,7 @@ async def create_product(
     db: Annotated[Session, Depends(get_db)],
     product_data: ProductCreateSchema,
 ):
-    category = db.scalar(
-        select(Category)
-        .where(Category.id == product_data.category_id)
-    )
-    if not category:
-        raise HTTPException(
-            detail={"error": "Category does not exist"},
-            status_code=status.HTTP_404_NOT_FOUND,
-        )
+    category = get_object_or_404(db, Category, Category.id == product_data.category_id)
     product = Product(
         name=product_data.name,
         slug=slugify(product_data.name),
@@ -52,7 +44,7 @@ async def create_product(
         price=product_data.price,
         image_url=product_data.image_url,
         stock=product_data.stock,
-        category_id=product_data.category_id,
+        category_id=category.id,
     )
     db.add(product)
     db.commit()
@@ -65,15 +57,7 @@ async def get_product(
     product_id: int,
     db: Annotated[Session, Depends(get_db)],
 ):
-    product = db.scalar(
-        select(Product)
-        .where(Product.id == product_id)
-    )
-    if not product:
-        raise HTTPException(
-            detail={"error": "Product does not exists"},
-            status_code=status.HTTP_404_NOT_FOUND,
-        )
+    product = get_object_or_404(db, Product, Product.id == product_id)
     return product
 
 
@@ -83,30 +67,15 @@ async def update_product(
     product_data: ProductCreateSchema,
     db: Annotated[Session, Depends(get_db)],
 ):
-    product = db.scalar(
-        select(Product)
-        .where(Product.id == product_id)
-    )
-    if not product:
-        return HTTPException(
-            detail={"error": "Product does not exists"},
-            status_code=status.HTTP_404_NOT_FOUND,
-        )
-    category = db.scalar(
-        select(Category)
-        .where(Category.id == product_data.category_id)
-    )
-    if not category:
-        return HTTPException(
-            detail={"error": "Category does not exists"},
-            status_code=status.HTTP_404_NOT_FOUND,
-        )
+    product = get_object_or_404(db, Product, Product.id == product_id)
+    category = get_object_or_404(db, Category, Category.id == product_data.category_id)
+
     product.name = product_data.name
     product.slug = slugify(product_data.name)
     product.description = product_data.description
     product.price = product_data.price
     product.image_url = product_data.name
-    product.category_id = product_data.category_id
+    product.category_id = category.id
     db.commit()
     db.refresh(product)
     return product
@@ -117,15 +86,7 @@ async def delete_product(
     product_id: int,
     db: Annotated[Session, Depends(get_db)],
 ):
-    product = db.scalar(
-        select(Product)
-        .where(Product.id == product_id)
-    )
-    if not product:
-        raise HTTPException(
-            detail={"error": "Product does not exists"},
-            status_code=status.HTTP_404_NOT_FOUND,
-        )
+    product = get_object_or_404(db, Product, Product.id == product_id)
     db.delete(product)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -140,17 +101,5 @@ async def get_products_list_by_category(
     category_id: int,
     db: Annotated[Session, Depends(get_db)],
 ):
-    category = db.scalar(
-        select(Category)
-        .where(Category.id == category_id)
-    )
-    if not category:
-        raise HTTPException(
-            detail={"error": "Category does not exists"},
-            status_code=status.HTTP_404_NOT_FOUND,
-        )
-    products = db.scalars(
-        select(Product)
-        .where(Product.category_id == category_id)
-    )
-    return products
+    category = get_object_or_404(db, Category, Category.id == category_id)
+    return get_object_or_404(db, Product, Product.category_id == category.id)

@@ -6,15 +6,15 @@ from fastapi import (
     Depends,
     Response,
     status,
-    HTTPException,
 )
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models.category import Category
 from app.backend.db_depends import get_db
+from app.routers.services import get_object_or_404
+from app.models.category import Category
 from app.schemas.category import (
     CategoryCreateSchema,
     CategoryRetriveSchema,
@@ -60,15 +60,7 @@ async def udate_category(
     category_data: CategoryCreateSchema,
     db: Annotated[Session, Depends(get_db)]
 ):
-    category = db.scalar(
-        select(Category)
-        .where(Category.id == category_id)
-    )
-    if not category:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": "Cateegory not found"},
-        )
+    category = get_object_or_404(db, Category, Category.id == category_id)
     category.name = category_data.name
     category.slug = slugify(category_data.name)
     db.commit()
@@ -81,15 +73,7 @@ async def delete_category(
     category_id: int,
     db: Annotated[Session, Depends(get_db)],
 ):
-    category = db.scalar(
-        select(Category).
-        where(Category.id == category_id)
-    )
-    if category is None:
-        raise HTTPException(
-            detail={"error": "Cateegory not found"},
-            status_code=status.HTTP_404_NOT_FOUND,
-        )
+    category = get_object_or_404(db, Category, Category.id == category_id)
     db.delete(category)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)

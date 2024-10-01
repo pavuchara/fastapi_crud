@@ -13,6 +13,7 @@ sqlalchemy = "^2.0.35"
 alembic = "^1.13.3"
 flake8 = "^7.1.1"
 python-slugify = "^8.0.4"
+asyncpg = "^0.29.0"
 
 
 [build-system]
