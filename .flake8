@@ -3,6 +3,7 @@ max-line-length = 100
 
 ignore =
   E712
+  E402
 
 exclude =
   ./.cache,
