@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 from dotenv import load_dotenv
 
-from app.models import category, products
+from app.models import category, products, user
 from app.backend.db import Base
 
 load_dotenv()
