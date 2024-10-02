@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 class UserRetriveScehema(BaseModel):
     id: int
-    email: int
+    email: str
     first_name: str | None
     last_name: str | None
     is_admin: bool
@@ -12,7 +12,12 @@ class UserRetriveScehema(BaseModel):
 
 
 class UserCreateSchema(BaseModel):
-    email: int
-    password: int
+    email: str
+    password: str
+    first_name: str | None
+    last_name: str | None
+
+
+class UserUpdateSchema(BaseModel):
     first_name: str | None
     last_name: str | None
