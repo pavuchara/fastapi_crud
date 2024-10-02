@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.backend.db_depends import get_db
 from app.models.user import User
-from app.routers.auth import get_current_auth_user
+from app.routers.auth import oauth2_scheme
 from app.routers.services import get_object_or_404
 from app.schemas.user import (
     UserRetriveScehema,
@@ -29,10 +29,8 @@ async def get_list_users(
     return users.all()
 
 
-@router.get("/current", response_model=UserRetriveScehema, status_code=status.HTTP_200_OK)
-async def get_current_user(
-    user: User = Depends(get_current_auth_user)
-):
+@router.get("/current")
+async def get_current_user(user: User = Depends(oauth2_scheme)):
     return user
 
 

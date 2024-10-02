@@ -6,7 +6,7 @@ from fastapi import (
     status,
     HTTPException,
 )
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,7 +23,7 @@ from app.schemas.user import (
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-security = HTTPBasic()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 
 @router.post(
@@ -59,12 +59,28 @@ async def create_user(
         )
 
 
-async def get_current_auth_user(
+async def authenticate_user(
+    email: str,
+    password: str,
     db: Annotated[AsyncSession, Depends(get_db)],
-    credentials: Annotated[HTTPBasicCredentials, Depends(security)],
 ):
-    # HTTPBasic only for username, i use email -> username.
-    user = await db.scalar(select(User).where(User.email == credentials.username))
-    if not user or not bcrypt_context.verify(credentials.password, user.password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    user = await db.scalar(select(User).where(User.email == email))
+    if not user or not bcrypt_context.verify(password, user.password):
+        raise HTTPException(
+            detail="Invalid auth creds",
+            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_401_UNAUTHORIZED
+        )
     return user
+
+
+@router.post("/token", status_code=status.HTTP_200_OK)
+async def get_token(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+):
+    user = await authenticate_user(form_data.username, form_data.password, db)
+    return {
+        "access_token": user.email,
+        "token_type": "bearer"
+    }
