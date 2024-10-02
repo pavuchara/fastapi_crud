@@ -5,6 +5,7 @@ from fastapi import (
     Depends,
     Response,
     status,
+    Query,
 )
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,9 +26,14 @@ router = APIRouter(prefix="/products", tags=["products"])
 
 @router.get("/", response_model=list[ProductRetriveSchema], status_code=status.HTTP_200_OK)
 async def get_list_products(
-    db: Annotated[AsyncSession, Depends(get_db)]
+    db: Annotated[AsyncSession, Depends(get_db)],
+    by_category_id: Annotated[int | None, Query()] = None,
 ):
-    products = await db.scalars(select(Product))
+    if by_category_id is not None:
+        category = await get_object_or_404(db, Category, Category.id == by_category_id)
+        products = await db.scalars(select(Product).where(Product.category_id == category.id))
+    else:
+        products = await db.scalars(select(Product))
     return products.all()
 
 
@@ -90,17 +96,3 @@ async def delete_product(
     await db.delete(product)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-@router.get(
-    "/category/{category_id}",
-    response_model=list[ProductRetriveSchema],
-    status_code=status.HTTP_200_OK,
-)
-async def get_products_list_by_category(
-    category_id: int,
-    db: Annotated[AsyncSession, Depends(get_db)],
-):
-    category = await get_object_or_404(db, Category, Category.id == category_id)
-    products = await get_object_or_404(db, Product, Product.category_id == category.id)
-    return products.all()

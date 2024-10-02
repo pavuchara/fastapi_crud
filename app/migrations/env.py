@@ -10,15 +10,9 @@ from alembic import context
 from dotenv import load_dotenv
 
 from app.models import category, products, user
-from app.backend.db import Base
+from app.backend.db import Base, DATABASE_URL
 
 load_dotenv()
-
-POSTGRES_DB = os.getenv("POSTGRES_DB")
-POSTGRES_USER = os.getenv("POSTGRES_USER")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-
-DATABASE_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:5432/{POSTGRES_DB}"
 
 config = context.config
 
