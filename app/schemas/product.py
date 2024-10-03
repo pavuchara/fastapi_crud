@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 
 from app.schemas.user import UserRetriveScehema
+from app.schemas.category import CategoryRetriveSchema
 
 
 class ProductCreateSchema(BaseModel):
@@ -21,5 +22,5 @@ class ProductRetriveSchema(BaseModel):
     image_url: str | None
     stock: int
     rating: int
-    category_id: int
+    category: CategoryRetriveSchema
     author: UserRetriveScehema | None

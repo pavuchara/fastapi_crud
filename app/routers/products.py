@@ -41,10 +41,19 @@ async def get_list_products(
         products = await db.scalars(
             select(Product)
             .where(Product.category_id == category.id)
-            .options(selectinload(Product.author))
+            .options(
+                selectinload(Product.author),
+                selectinload(Product.category),
+            )
         )
     else:
-        products = await db.scalars(select(Product).options(selectinload(Product.author)))
+        products = await db.scalars(
+            select(Product)
+            .options(
+                selectinload(Product.author),
+                selectinload(Product.category),
+            )
+        )
     return products.all()
 
 
@@ -71,7 +80,10 @@ async def create_product(
     product_with_author = await db.scalar(
         select(Product)
         .where(Product.id == product.id)
-        .options(selectinload(Product.author))
+        .options(
+            selectinload(Product.author),
+            selectinload(Product.category),
+        )
     )
     return product_with_author
 
@@ -85,7 +97,10 @@ async def get_product(
     product = await db.scalar(
         select(Product)
         .where(Product.id == product_id)
-        .options(selectinload(Product.author))
+        .options(
+            selectinload(Product.author),
+            selectinload(Product.category),
+        )
     )
 
     if not product:
@@ -112,7 +127,16 @@ async def update_product(
         product.category_id = category.id
         await db.commit()
         await db.refresh(product)
-        return product
+
+        product_with_related_fields = await db.scalar(
+            select(Product)
+            .where(Product.id == product.id)
+            .options(
+                selectinload(Product.author),
+                selectinload(Product.category),
+            )
+        )
+        return product_with_related_fields
     raise HTTPException(
         detail="Not product owner",
         status_code=status.HTTP_403_FORBIDDEN,
