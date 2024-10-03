@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from app.schemas.user import UserRetriveScehema
+
 
 class ProductCreateSchema(BaseModel):
     name: str
@@ -20,3 +22,4 @@ class ProductRetriveSchema(BaseModel):
     stock: int
     rating: int
     category_id: int
+    author: UserRetriveScehema | None

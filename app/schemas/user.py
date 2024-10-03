@@ -21,3 +21,9 @@ class UserCreateSchema(BaseModel):
 class UserUpdateSchema(BaseModel):
     first_name: str | None
     last_name: str | None
+
+
+class UserStatusUpdate(BaseModel):
+    is_admin: bool
+    is_supplier: bool
+    is_customer: bool
