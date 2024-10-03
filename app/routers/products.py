@@ -23,6 +23,7 @@ from app.schemas.product import (
     ProductCreateSchema,
     ProductRetriveSchema,
 )
+from app.models.services.exceptions import ProductValidationException
 from app.routers.services.permissions import (
     only_auth_user_permission,
 )
@@ -63,29 +64,35 @@ async def create_product(
     product_data: ProductCreateSchema,
     user: Annotated[User, Depends(only_auth_user_permission)],
 ):
-    category = await get_object_or_404(db, Category, Category.id == product_data.category_id)
-    product = Product(
-        name=product_data.name,
-        slug=slugify(product_data.name),
-        description=product_data.description,
-        price=product_data.price,
-        image_url=product_data.image_url,
-        stock=product_data.stock,
-        category_id=category.id,
-        author_id=user.id,
-    )
-    db.add(product)
-    await db.commit()
-    await db.refresh(product)
-    product_with_author = await db.scalar(
-        select(Product)
-        .where(Product.id == product.id)
-        .options(
-            selectinload(Product.author),
-            selectinload(Product.category),
+    try:
+        category = await get_object_or_404(db, Category, Category.id == product_data.category_id)
+        product = Product(
+            name=product_data.name,
+            slug=slugify(product_data.name),
+            description=product_data.description,
+            price=product_data.price,
+            image_url=product_data.image_url,
+            stock=product_data.stock,
+            category_id=category.id,
+            author_id=user.id,
         )
-    )
-    return product_with_author
+        db.add(product)
+        await db.commit()
+        await db.refresh(product)
+        product_with_author = await db.scalar(
+            select(Product)
+            .where(Product.id == product.id)
+            .options(
+                selectinload(Product.author),
+                selectinload(Product.category),
+            )
+        )
+        return product_with_author
+    except ProductValidationException as e:
+        raise HTTPException(
+            detail=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
 
 
 @router.get("/{product_id}", response_model=ProductRetriveSchema, status_code=status.HTTP_200_OK)
@@ -115,32 +122,38 @@ async def update_product(
     db: Annotated[AsyncSession, Depends(get_db)],
     request_user: Annotated[User, Depends(only_auth_user_permission)],
 ):
-    product = await get_object_or_404(db, Product, Product.id == product_id)
-    if request_user.id == product.author_id:
-        category = await get_object_or_404(db, Category, Category.id == product_data.category_id)
+    try:
+        product = await get_object_or_404(db, Product, Product.id == product_id)
+        if request_user.id == product.author_id:
+            category = await get_object_or_404(db, Category, Category.id == product_data.category_id)
 
-        product.name = product_data.name
-        product.slug = slugify(product_data.name)
-        product.description = product_data.description
-        product.price = product_data.price
-        product.image_url = product_data.name
-        product.category_id = category.id
-        await db.commit()
-        await db.refresh(product)
+            product.name = product_data.name
+            product.slug = slugify(product_data.name)
+            product.description = product_data.description
+            product.price = product_data.price
+            product.image_url = product_data.name
+            product.category_id = category.id
+            await db.commit()
+            await db.refresh(product)
 
-        product_with_related_fields = await db.scalar(
-            select(Product)
-            .where(Product.id == product.id)
-            .options(
-                selectinload(Product.author),
-                selectinload(Product.category),
+            product_with_related_fields = await db.scalar(
+                select(Product)
+                .where(Product.id == product.id)
+                .options(
+                    selectinload(Product.author),
+                    selectinload(Product.category),
+                )
             )
+            return product_with_related_fields
+        raise HTTPException(
+            detail="Not product owner",
+            status_code=status.HTTP_403_FORBIDDEN,
         )
-        return product_with_related_fields
-    raise HTTPException(
-        detail="Not product owner",
-        status_code=status.HTTP_403_FORBIDDEN,
-    )
+    except ProductValidationException as e:
+        raise HTTPException(
+            detail=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)

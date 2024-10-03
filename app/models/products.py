@@ -4,9 +4,10 @@ from sqlalchemy import (
     String,
     Boolean,
 )
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy.orm import relationship, Mapped, mapped_column, validates
 
 from app.backend.db import Base
+from app.models.services.exceptions import ProductValidationException
 
 
 class Product(Base):
@@ -14,7 +15,7 @@ class Product(Base):
     # Table fields:
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(256))
-    slug: Mapped[str] = mapped_column(String(50))
+    slug: Mapped[str] = mapped_column(String(50), unique=True)
     description: Mapped[str] = mapped_column(String(5000))
     price: Mapped[int] = mapped_column(Integer)
     image_url: Mapped[str | None] = mapped_column(String(256), nullable=True)
@@ -31,3 +32,14 @@ class Product(Base):
     # Relationships:
     category = relationship("app.models.category.Category", back_populates="products")
     author = relationship("app.models.user.User", back_populates="products")
+
+    @validates("price")
+    def validate_price(self, key, value):
+        if value <= 0:
+            raise ProductValidationException("Price cannot be <= 0!")
+        return value
+
+    @validates("stock")
+    def validate_stock(self, key, value):
+        if value < 0:
+            raise ProductValidationException("Stock cannot be < 0!")
