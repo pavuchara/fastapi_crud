@@ -22,7 +22,12 @@ class Product(Base):
     rating: Mapped[int] = mapped_column(Integer, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     category_id: Mapped[int] = mapped_column(Integer, ForeignKey("categories.id"), index=True)
-    author_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), index=True, nullable=True)
+    author_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("users.id"),
+        index=True,
+        nullable=True
+    )
     # Relationships:
     category = relationship("app.models.category.Category", back_populates="products")
     author = relationship("app.models.user.User", back_populates="products")
