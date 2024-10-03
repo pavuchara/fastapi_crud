@@ -17,6 +17,7 @@ exclude =
   ./cached_venv,
   ./var,
   ./.vscode,
+  settings.py
   app/migrations/*
 
   enable-extensions = print, VNE

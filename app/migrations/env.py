@@ -10,7 +10,8 @@ from alembic import context
 from dotenv import load_dotenv
 
 from app.models import category, products, user
-from app.backend.db import Base, DATABASE_URL
+from app.settings import DATABASE_URL
+from app.backend.db import Base
 
 load_dotenv()
 
