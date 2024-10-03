@@ -37,6 +37,7 @@ async def get_list_products(
     _: Annotated[User, Depends(only_auth_user_permission)],
     by_category_id: Annotated[int | None, Query()] = None,
 ):
+    """Список продуктов."""
     if by_category_id is not None:
         category = await get_object_or_404(db, Category, Category.id == by_category_id)
         products = await db.scalars(
@@ -64,6 +65,7 @@ async def create_product(
     product_data: ProductCreateSchema,
     user: Annotated[User, Depends(only_auth_user_permission)],
 ):
+    """Создание продукта."""
     try:
         category = await get_object_or_404(db, Category, Category.id == product_data.category_id)
         product = Product(
@@ -79,7 +81,7 @@ async def create_product(
         db.add(product)
         await db.commit()
         await db.refresh(product)
-        product_with_author = await db.scalar(
+        new_product = await db.scalar(
             select(Product)
             .where(Product.id == product.id)
             .options(
@@ -87,7 +89,7 @@ async def create_product(
                 selectinload(Product.category),
             )
         )
-        return product_with_author
+        return new_product
     except ProductValidationException as e:
         raise HTTPException(
             detail=str(e),
@@ -101,6 +103,7 @@ async def get_product(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(only_auth_user_permission)],
 ):
+    """Получение конкретного продукта."""
     product = await db.scalar(
         select(Product)
         .where(Product.id == product_id)
@@ -122,10 +125,13 @@ async def update_product(
     db: Annotated[AsyncSession, Depends(get_db)],
     request_user: Annotated[User, Depends(only_auth_user_permission)],
 ):
+    """Обновление продукта (только автор)."""
     try:
         product = await get_object_or_404(db, Product, Product.id == product_id)
         if request_user.id == product.author_id:
-            category = await get_object_or_404(db, Category, Category.id == product_data.category_id)
+            category = await get_object_or_404(
+                db, Category, Category.id == product_data.category_id
+            )
 
             product.name = product_data.name
             product.slug = slugify(product_data.name)
@@ -162,6 +168,7 @@ async def delete_product(
     db: Annotated[AsyncSession, Depends(get_db)],
     request_user: Annotated[User, Depends(only_auth_user_permission)],
 ):
+    """Удаление продукта (только автор)."""
     product = await get_object_or_404(db, Product, Product.id == product_id)
     if request_user.id == product.author_id:
         await db.delete(product)

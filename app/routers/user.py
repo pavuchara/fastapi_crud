@@ -30,6 +30,7 @@ async def get_list_users(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(only_auth_user_permission)],
 ):
+    """Список пользователей."""
     users = await db.scalars(select(User))
     return users.all()
 
@@ -38,6 +39,7 @@ async def get_list_users(
 async def get_current_user(
     request_user: Annotated[User, Depends(only_auth_user_permission)],
 ):
+    """Текущий пользователь."""
     return request_user
 
 
@@ -47,6 +49,7 @@ async def get_user(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(only_auth_user_permission)],
 ):
+    """Пользователь по id."""
     user = await get_object_or_404(db, User, User.id == user_id)
     return user
 
@@ -58,6 +61,7 @@ async def change_profile(
     db: Annotated[AsyncSession, Depends(get_db)],
     request_user: Annotated[User, Depends(only_auth_user_permission)],
 ):
+    """Правки в профиль пользователя (только для владельца)."""
     try:
         if request_user.id == user_id:
             user = await get_object_or_404(db, User, User.id == user_id)
