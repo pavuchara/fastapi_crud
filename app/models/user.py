@@ -3,9 +3,12 @@ from sqlalchemy import (
     String,
     Boolean,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
+
+from email_validator import validate_email, EmailNotValidError
 
 from app.backend.db import Base
+from app.models.services.exceptions import UserValidationException
 
 
 class User(Base):
@@ -20,4 +23,16 @@ class User(Base):
     is_supplier: Mapped[bool] = mapped_column(Boolean, default=False)
     is_customer: Mapped[bool] = mapped_column(Boolean, default=True)
     # Relationships:
-    products = relationship("app.models.products.Product", back_populates="author", cascade="all, delete-orphan")
+    products = relationship(
+        "app.models.products.Product",
+        back_populates="author",
+        cascade="all, delete-orphan",
+    )
+
+    @validates("email")
+    def validate_email(self, key, value):
+        try:
+            emailinfo = validate_email(value, check_deliverability=False)
+            return emailinfo.normalized
+        except EmailNotValidError as e:
+            raise UserValidationException(str(e))

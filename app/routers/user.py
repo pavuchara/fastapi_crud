@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.backend.db_depends import get_db
 from app.models.user import User
 from app.routers.services.utils import get_object_or_404
+from app.models.services.exceptions import UserValidationException
 from app.schemas.user import (
     UserRetriveScehema,
     UserUpdateSchema,
@@ -57,14 +58,20 @@ async def change_profile(
     db: Annotated[AsyncSession, Depends(get_db)],
     request_user: Annotated[User, Depends(only_auth_user_permission)],
 ):
-    if request_user.id == user_id:
-        user = await get_object_or_404(db, User, User.id == user_id)
-        user.first_name = user_data.first_name
-        user.last_name = user_data.last_name
-        await db.commit()
-        await db.refresh(user)
-        return user
-    raise HTTPException(
-        detail="Not profile owner",
-        status_code=status.HTTP_403_FORBIDDEN,
-    )
+    try:
+        if request_user.id == user_id:
+            user = await get_object_or_404(db, User, User.id == user_id)
+            user.first_name = user_data.first_name
+            user.last_name = user_data.last_name
+            await db.commit()
+            await db.refresh(user)
+            return user
+        raise HTTPException(
+            detail="Not profile owner",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+    except UserValidationException as e:
+        raise HTTPException(
+            detail=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )

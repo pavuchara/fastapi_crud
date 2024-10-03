@@ -17,6 +17,7 @@ from app.schemas.user import (
     UserCreateSchema,
     UserRetriveScehema,
 )
+from app.models.services.exceptions import UserValidationException
 from app.routers.services.auth import (
     authenticate_user,
     create_access_token,
@@ -69,6 +70,11 @@ async def create_user(
         await db.commit()
         await db.refresh(user)
         return user
+    except UserValidationException as e:
+        raise HTTPException(
+            detail=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
     except IntegrityError as e:
         await db.rollback()
         if "unique" in str(e.orig):
