@@ -32,6 +32,7 @@ async def get_all_categories(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(only_auth_user_permission)],
 ):
+    """Список категорий."""
     categories = await db.scalars(
         select(Category)
         .where(Category.is_active == True)
@@ -45,6 +46,7 @@ async def create_category(
     category_data: CategoryCreateSchema,
     _: Annotated[User, Depends(only_admin_permission)],
 ):
+    """Создание категории."""
     new_category = Category(
         name=category_data.name,
         slug=slugify(category_data.name),
@@ -62,6 +64,7 @@ async def udate_category(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(only_admin_permission)],
 ):
+    """Обновление категории."""
     category = await get_object_or_404(db, Category, Category.id == category_id)
     category.name = category_data.name
     category.slug = slugify(category_data.name)
@@ -76,6 +79,7 @@ async def delete_category(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(only_admin_permission)],
 ):
+    """Удаление категории."""
     category = await get_object_or_404(db, Category, Category.id == category_id)
     await db.delete(category)
     await db.commit()
