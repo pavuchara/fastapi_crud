@@ -20,7 +20,8 @@ from app.models.review import Review
 from app.routers.services.utils import get_object_or_404
 from app.routers.services.permissions import only_auth_user_permission
 from app.models.services.exceptions import ReviewValidationException
-from app.models.services.utils import update_product_rating
+from app.models.services.products_utils import update_product_rating
+from app.models.services.review_utils import create_review_helper
 from app.schemas.review import (
     ReviewCreateSchema,
     ReviewRetriveSchema,
@@ -88,25 +89,8 @@ async def create_review(
 ):
     """Написать отзыв на товар."""
     try:
-        product = await get_object_or_404(db, Product, Product.id == product_id)
-        review = Review(
-            author_id=user.id,
-            product_id=product.id,
-            grade=review_data.grade,
-            comment=review_data.comment,
-        )
-        db.add(review)
-        await db.commit()
-        await db.refresh(review)
-        await update_product_rating(db, product_id)
-        new_review = await db.scalar(
-            select(Review)
-            .where(Review.id == review.id)
-            .options(
-                selectinload(Review.author),
-            )
-        )
-        return new_review
+        review = await create_review_helper(db, product_id, user, review_data)
+        return review
     except ReviewValidationException as e:
         raise HTTPException(
             detail=str(e),
