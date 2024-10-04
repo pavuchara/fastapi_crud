@@ -28,6 +28,11 @@ class User(Base):
         back_populates="author",
         cascade="all, delete-orphan",
     )
+    reviews = relationship(
+        "app.models.review.Review",
+        back_populates="author",
+        cascade="all, delete-orphan",
+    )
 
     @validates("email")
     def validate_email(self, key, value):
