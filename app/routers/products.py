@@ -10,12 +10,10 @@ from fastapi import (
 )
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from slugify import slugify
-
 from app.backend.db_depends import get_db
-from app.routers.services.utils import get_object_or_404
 from app.models.user import User
 from app.models.products import Product
 from app.models.category import Category
@@ -23,7 +21,12 @@ from app.schemas.product import (
     ProductCreateSchema,
     ProductRetriveSchema,
 )
+from app.routers.services.utils import get_object_or_404
 from app.models.services.exceptions import ProductValidationException
+from app.models.services.products_utils import (
+    create_product_helper,
+    update_product_helper,
+)
 from app.routers.services.permissions import (
     only_auth_user_permission,
 )
@@ -70,32 +73,17 @@ async def create_product(
 ):
     """Создание продукта."""
     try:
-        category = await get_object_or_404(db, Category, Category.id == product_data.category_id)
-        product = Product(
-            name=product_data.name,
-            slug=slugify(product_data.name),
-            description=product_data.description,
-            price=product_data.price,
-            image_url=product_data.image_url,
-            stock=product_data.stock,
-            category_id=category.id,
-            author_id=user.id,
-        )
-        db.add(product)
-        await db.commit()
-        await db.refresh(product)
-        new_product = await db.scalar(
-            select(Product)
-            .where(Product.id == product.id)
-            .options(
-                selectinload(Product.author),
-                selectinload(Product.category),
-            )
-        )
-        return new_product
+        product = await create_product_helper(db, user, product_data)
+        return product
     except ProductValidationException as e:
         raise HTTPException(
             detail=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    except IntegrityError:
+        # TODO по хорошему вычилять именно ошибку slug, а не все.
+        raise HTTPException(
+            detail="Slug already exists",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -133,26 +121,11 @@ async def update_product(
     try:
         product = await get_object_or_404(db, Product, Product.id == product_id)
         if request_user.id == product.author_id:
-            category = await get_object_or_404(
-                db, Category, Category.id == product_data.category_id
-            )
-
-            product.name = product_data.name
-            product.slug = slugify(product_data.name)
-            product.description = product_data.description
-            product.price = product_data.price
-            product.image_url = product_data.name
-            product.category_id = category.id
-            await db.commit()
-            await db.refresh(product)
-
-            product_with_related_fields = await db.scalar(
-                select(Product)
-                .where(Product.id == product.id)
-                .options(
-                    selectinload(Product.author),
-                    selectinload(Product.category),
-                )
+            product_with_related_fields = await update_product_helper(
+                db,
+                request_user,
+                product,
+                product_data,
             )
             return product_with_related_fields
         raise HTTPException(
@@ -162,6 +135,12 @@ async def update_product(
     except ProductValidationException as e:
         raise HTTPException(
             detail=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    except IntegrityError:
+        # TODO по хорошему вычилять именно ошибку slug, а не все.
+        raise HTTPException(
+            detail="Slug already exists",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 

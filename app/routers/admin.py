@@ -13,7 +13,7 @@ from app.models.user import User
 from app.models.review import Review
 from app.routers.services.permissions import only_admin_permission
 from app.routers.services.utils import get_object_or_404
-from app.models.services.utils import update_product_rating
+from app.models.services.products_utils import update_product_rating
 from app.schemas.review import ReviewRetriveSchema, ReviewChangeStatusSchema
 from app.schemas.user import (
     UserRetriveScehema,
