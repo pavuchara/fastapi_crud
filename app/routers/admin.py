@@ -10,8 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.backend.db_depends import get_db
 from app.models.user import User
+from app.models.review import Review
 from app.routers.services.permissions import only_admin_permission
 from app.routers.services.utils import get_object_or_404
+from app.models.services.utils import update_product_rating
+from app.schemas.review import ReviewRetriveSchema, ReviewChangeStatusSchema
 from app.schemas.user import (
     UserRetriveScehema,
     UserStatusUpdate,
@@ -55,3 +58,23 @@ async def delete_user(
     await db.delete(target_user)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.put(
+    "/change_review_status/{review_id}",
+    response_model=ReviewRetriveSchema,
+    status_code=status.HTTP_200_OK,
+)
+async def change_review_status(
+    review_id: int,
+    review_status: ReviewChangeStatusSchema,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(only_admin_permission)],
+):
+    """Роут чисто для админа (`is_admin == True`), скрыть отзыв."""
+    review = await get_object_or_404(db, Review, Review.id == review_id)
+    review.is_active = review_status.is_active
+    await db.commit()
+    await db.refresh(review)
+    await update_product_rating(db, review.product_id)
+    return review

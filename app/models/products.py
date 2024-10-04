@@ -11,6 +11,7 @@ from app.models.services.exceptions import ProductValidationException
 
 
 class Product(Base):
+    """Модель продуктов."""
     __tablename__ = "products"
     # Table fields:
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -32,6 +33,11 @@ class Product(Base):
     # Relationships:
     category = relationship("app.models.category.Category", back_populates="products")
     author = relationship("app.models.user.User", back_populates="products")
+    reviews = relationship(
+        "app.models.review.Review",
+        back_populates="product",
+        cascade="all, delete-orphan",
+    )
 
     @validates("price")
     def validate_price(self, key, value):
@@ -43,3 +49,4 @@ class Product(Base):
     def validate_stock(self, key, value):
         if value < 0:
             raise ProductValidationException("Stock cannot be < 0!")
+        return value

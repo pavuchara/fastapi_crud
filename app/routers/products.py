@@ -38,11 +38,13 @@ async def get_list_products(
     by_category_id: Annotated[int | None, Query()] = None,
 ):
     """Список продуктов."""
+    # TODO возможно эту логику можно перенести в фильтр/Depends
     if by_category_id is not None:
         category = await get_object_or_404(db, Category, Category.id == by_category_id)
         products = await db.scalars(
             select(Product)
             .where(Product.category_id == category.id)
+            .where(Product.is_active == True)
             .options(
                 selectinload(Product.author),
                 selectinload(Product.category),
@@ -51,6 +53,7 @@ async def get_list_products(
     else:
         products = await db.scalars(
             select(Product)
+            .where(Product.is_active == True)
             .options(
                 selectinload(Product.author),
                 selectinload(Product.category),
@@ -107,6 +110,7 @@ async def get_product(
     product = await db.scalar(
         select(Product)
         .where(Product.id == product_id)
+        .where(Product.is_active == True)
         .options(
             selectinload(Product.author),
             selectinload(Product.category),

@@ -9,7 +9,12 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 from dotenv import load_dotenv
 
-from app.models import category, products, user
+from app.models import (
+    category,
+    products,
+    user,
+    review,
+)
 from app.settings import DATABASE_URL
 from app.backend.db import Base
 
