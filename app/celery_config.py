@@ -1,16 +1,16 @@
 """
 Запуск можно осуществить след. способами:
     - Просто запустить воркер:
-        celery -A app.celery_config worker
+        celery -A app.celery_config:celery worker
     - Воркер с подробной лог инфой и пулом процессов:
-        celery -A app.celery_config worker --loglevel=info -P gevent
+        celery -A app.celery_config:celery worker --loglevel=info -P gevent
     - Чисто beat процесс:
-        celery -A app.celery_config beat --loglevel=info
+        celery -A app.celery_config:celery beat --loglevel=info
     - Воркер вместе с beat процессом:
-        celery -A app.celery_config worker --beat --loglevel=info
+        celery -A app.celery_config:celery worker --beat --loglevel=info
 
     Мониторинг flower (http://localhost:5555/):
-        celery -A main.celery flower
+        celery -A main.celery:celery flower
 """
 
 from celery import Celery
