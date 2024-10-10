@@ -1,7 +1,9 @@
 import os
 from datetime import timedelta
-from dotenv import load_dotenv
 from pathlib import Path
+
+from dotenv import load_dotenv
+
 
 load_dotenv()
 
@@ -22,7 +24,7 @@ DATABASE_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localh
 ALLOW_ORIGINS = ["*"]  # TODO Fix me later
 ALLOWED_HOSTS = ["*"]  # TODO Fix me later
 
-# Loguru
+# Loguru:
 LOGURU_CONF = {
     "rotation": "10 MB",
     "retention": "1 week",

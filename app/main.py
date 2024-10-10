@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
-from app.middlewares import setup_middlewares
 from app.logger import init_logging
+from app.middlewares import setup_middlewares
 
 from app.routers import (
     auth,
@@ -24,3 +24,12 @@ app.include_router(user.router)
 app.include_router(products.router)
 app.include_router(category.router)
 app.include_router(rewiew.router)
+
+
+from app.tasks import call_background_task
+
+
+@app.get("/qweqwe")
+async def hello_world(message: str):
+    call_background_task.delay(message)
+    return {'message': 'Hello World!'}
